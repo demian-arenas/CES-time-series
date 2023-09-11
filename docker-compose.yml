@@ -1,0 +1,32 @@
+version: '3'
+services:
+  db:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./data:/data
+      - ./download_data.sh:/docker-entrypoint-initdb.d/download_data.sh
+      - ./init_all.sh:/docker-entrypoint-initdb.d/init_all.sh
+      - ./sql_scripts:/docker-entrypoint-initdb.d/sql_scripts
+    ports:
+      - "5432:5432"
+
+  server:
+    image: postgrest/postgrest
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PGRST_DB_ANON_ROLE: ${PGRST_DB_ANON_ROLE}
+      PGRST_SERVER_PROXY_URI: http://127.0.0.1:3000
+    depends_on:
+      - db
+
+volumes:
+  db_data:
